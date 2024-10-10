@@ -7,7 +7,7 @@ import fs from 'fs';
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     const datas = global;
     const idioma = datas.db.data.users[m.sender].language;
-    const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`));
+    const _translate = JSON.parse(fs.readFileSync(`./language/${idioma}.json`));
     const tradutor = _translate.plugins.buscador_lyrics;
     const teks = text ? text : m.quoted && m.quoted.text ? m.quoted.text : '';
     if (!teks) throw `*${tradutor.texto1} ${usedPrefix + command} beret ojala*`;
@@ -19,6 +19,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         } else {
             lyrics = await searchLyrics(`${teks}`);
         }
+        console.log(lyrics)
         const tituloL = result[0].title ? result[0].title : lyrics.title
         const artistaL = result[0].artist ? result[0].artist : lyrics.artist
         const res = await fetch(global.API('https://some-random-api.com', '/lyrics', { title: artistaL + tituloL }));
@@ -38,12 +39,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 }
             }
         }
-
-        const previewUrl = result[0]?.preview.replace('http://cdn-preview-', 'https://cdns-preview-').replace('.deezer.com', '.dzcdn.net');
-
-        const textoLetra = `${tradutor.texto2[0]} *${tituloL || ''}*\n${tradutor.texto2[1]}  *${artistaL || ''}*\n\n${tradutor.texto2[2]} \n${lyrics.lyrics || 'Lyrics not found.'}`;
+        const textoLetra = `${tradutor.texto2[0]} *${tituloL || ''}*\n${tradutor.texto2[1]}  *${artistaL || ''}*\n\n${tradutor.texto2[2]} \n${lyrics.lyrics || 'لم يتم العثور.'}`;
         await conn.sendMessage(m.chat, { image: { url: img }, caption: textoLetra }, { quoted: m });
-        await conn.sendMessage(m.chat, { audio: { url: previewUrl }, fileName: `${artistaL || '-'} - ${tituloL || '-'}.mp3`, mimetype: 'audio/mp4' }, { quoted: m });
+        await conn.sendMessage(m.chat, { audio: { url: result[0]?.preview }, fileName: `${artistaL || '-'} - ${tituloL || '-'}.mp3`, mimetype: 'audio/mp4' }, { quoted: m });
     } catch (e) {
         console.log(`Error: ${e.message}`)
         throw `*${tradutor.texto2[3]}*`;
@@ -51,18 +49,18 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 };
 handler.help = ['lirik', 'letra'].map((v) => v + ' <Apa>');
 handler.tags = ['internet'];
-handler.command = /^(lirik|lyrics|lyric|letra)$/i;
+handler.command = /^(كلمات-اغنية|كلمات-اغنيه|lyric|letra)$/i;
 export default handler;
 
 /* Creditos: https://github.com/darlyn1234 */
 async function searchLyrics(term) {
   try {
-    if (!term) return "🟥 Provide the name of the song to search the lyrics";
-    const geniusResponse = await axios.get(`https://apilyrics.vercel.app/genius?query=${term}`);
+    if (!term) return "🟥 أدخل اسم الأغنية للبحث في كلمات الأغاني";
+    const geniusResponse = await axios.get(`https://letra-lime.vercel.app/genius?query=${term}`);
     const geniusData = geniusResponse.data;
-    if (!geniusData.length) return `🟨 Couldn't find any lyrics for "${term}"`;
+    if (!geniusData.length) return `🟨 عذرا لم يتم اكتشاف الكلمات "${term}"`;
     const lyricsUrl = geniusData[0].url;
-    const lyricsResponse = await axios.get(`https://apilyrics.vercel.app/lyrics?url=${lyricsUrl}`);
+    const lyricsResponse = await axios.get(`https://letra-lime.vercel.app/lyrics?url=${lyricsUrl}`);
     const result = {
       status: '200',
       creador: 'Sareth',
